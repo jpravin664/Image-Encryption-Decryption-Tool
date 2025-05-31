@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Encryption and Decryption Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        function generateRandomKey(length = 16) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let key = '';
+            for (let i = 0; i < length; i++) {
+                key += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return key;
+        }
+
+        function handleFileSelect() {
+            const key = generateRandomKey();
+            document.getElementById('key').value = key;
+        }
+
+        function saveImage(imageData, filename) {
+            const link = document.createElement('a');
+            link.href = imageData;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Encryption and Decryption Tool</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form action="/encrypt" method="post" enctype="multipart/form-data" class="form-card">
+            <div class="form-group">
+                <label for="image">Select Image:</label>
+                <input type="file" id="image" name="image" accept="image/*" required onchange="handleFileSelect()">
+            </div>
+            <div class="form-group">
+                <label for="key">Encryption Key:</label>
+                <input type="text" id="key" name="key" readonly>
+            </div>
+            <button type="submit" class="btn">Encrypt Image</button>
+        </form>
+
+        <div class="image-container">
+            {% if encrypted_image %}
+                <div class="image-card">
+                    <h2>Encrypted Image</h2>
+                    <img src="{{ encrypted_image }}" alt="Encrypted Image Preview" class="blurred-preview">
+                    <button type="button" class="btn" onclick="saveImage('{{ encrypted_image }}', 'encrypted_image.jpg')">Save As</button>
+                    <div class="encrypted-data">
+                        <h3>Encrypted Data:</h3>
+                        <pre>{{ encrypted_image_base64 }}</pre>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if decrypted_image %}
+                <div class="image-card">
+                    <h2>Decrypted Image</h2>
+                    <img src="{{ decrypted_image }}" alt="Decrypted Image Preview">
+                    <button type="button" class="btn" onclick="saveImage('{{ decrypted_image }}', 'decrypted_image.jpg')">Save As</button>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if encrypted_image or decrypted_image %}
+            <div class="result-card">
+                <form action="/decrypt" method="post" class="form-card">
+                    {% if encrypted_image %}
+                        <input type="hidden" name="encrypted_image" value="{{ encrypted_image_base64 }}">
+                    {% endif %}
+                    <div class="form-group">
+                        <label for="key">Decryption Key:</label>
+                        <input type="text" id="key" name="key" value="{{ key }}" required>
+                    </div>
+                    <button type="submit" class="btn">Decrypt Image</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
